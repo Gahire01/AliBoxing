@@ -2,17 +2,27 @@
 
 // ============================================================
 // Home Page – Temporary "Under Development" screen
-// Shows a countdown that ends 2 days from first visit.
-// Replace this whole file with the real site when ready.
+// Countdown to launch. Replace when the real site is ready.
 // ============================================================
 
 import { useState, useEffect } from "react";
 import { Construction, Sparkles, Rocket, Code2, Smartphone } from "lucide-react";
 
 // ============================================================
+// Types
+// ============================================================
+type TimeLeft = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  done: boolean;
+};
+
+// ============================================================
 // Countdown helper
 // ============================================================
-function getTimeLeft(target) {
+function getTimeLeft(target: number): TimeLeft {
   const diff = Math.max(0, target - Date.now());
   return {
     days:    Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -23,31 +33,30 @@ function getTimeLeft(target) {
   };
 }
 
+// ============================================================
+// Home
+// ============================================================
 export default function Home() {
-  // Launch target = now + 2 days (locked once on first render)
-  const [target] = useState(() => Date.now() + 2 * 24 * 60 * 60 * 1000);
-  const [time, setTime] = useState(() => getTimeLeft(target));
-  const [mounted, setMounted] = useState(false);
+  // Only compute on client to avoid hydration mismatch
+  const [time, setTime] = useState<TimeLeft | null>(null);
+  const [mounted, setMounted] = useState<boolean>(false);
 
-  // Slide-in animation
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 80);
-    return () => clearTimeout(t);
+    setMounted(true);
+    const target = Date.now() + 2 * 24 * 60 * 60 * 1000; // 2 days from first load
+    const tick = () => setTime(getTimeLeft(target));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, []);
 
-  // Tick every second
-  useEffect(() => {
-    const id = setInterval(() => setTime(getTimeLeft(target)), 1000);
-    return () => clearInterval(id);
-  }, [target]);
-
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = (n: number): string => String(n).padStart(2, "0");
 
   const units = [
-    { label: "Days",    value: pad(time.days) },
-    { label: "Hours",   value: pad(time.hours) },
-    { label: "Minutes", value: pad(time.minutes) },
-    { label: "Seconds", value: pad(time.seconds) },
+    { label: "Days",    value: time ? pad(time.days)    : "--" },
+    { label: "Hours",   value: time ? pad(time.hours)   : "--" },
+    { label: "Minutes", value: time ? pad(time.minutes) : "--" },
+    { label: "Seconds", value: time ? pad(time.seconds) : "--" },
   ];
 
   return (
@@ -112,7 +121,6 @@ export default function Home() {
                        shadow-xl shadow-amber-500/40"
             style={{ animation: "udFloat 3s ease-in-out infinite" }}
           >
-            {/* Subtle spinning ring */}
             <span
               aria-hidden="true"
               className="absolute inset-[-6px] rounded-full border-2 border-dashed border-amber-300/60"
@@ -142,7 +150,7 @@ export default function Home() {
         </p>
 
         {/* Countdown */}
-        {!time.done ? (
+        {!time?.done ? (
           <div className="mb-10 grid w-full max-w-2xl grid-cols-4 gap-3 sm:gap-4">
             {units.map((u) => (
               <div
@@ -150,7 +158,6 @@ export default function Home() {
                 className="relative overflow-hidden rounded-2xl border border-white/10
                            bg-white/5 p-4 backdrop-blur-md"
               >
-                {/* Shine sweep */}
                 <span
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-12
@@ -191,7 +198,6 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Footer note */}
         <p className="mt-12 text-xs text-slate-500">
           Thanks for your patience — we can't wait to show you what we've been working on. ✨
         </p>
